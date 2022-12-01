@@ -10,14 +10,13 @@
                 </div>
                 <div class="col-md-8">
                     <div class="card-body">
-                    <a href="#"><h5 class="card-title">{{ listing.title }}</h5></a>
+                    <a href="{% url 'list' listing.title_to_url %}"><h5 class="card-title">{{ listing.title }}</h5></a>
                     <p class="card-text"><strong>Price:</strong> ${{ listing.starting_bid }}.00</p>
                     <p class="card-text"><strong>Description:</strong> {{ listing.description }}</p>
-                    <p class="card-text"><strong>created by:</strong> {{ listing.auctioneer }}</p>
-                    <p class="card-text"><small class="text-muted">{{ listing.date }}</small></p>
                     </div>
                 </div>
             </div>
         </div>
-      {% endfor %}   
+    {% endfor %}
+    <a class="btn btn-primary" href="{% url 'create' %}" role="button">Create Listing</a>
 {% endblock %}

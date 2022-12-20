@@ -1,0 +1,19 @@
+{% extends "auctions/layout.html" %}
+{% load static %}
+
+{% block body %}
+<h2 class="w-50 mx-5 mb-5">Listing categories</h2>
+<ul class="list-group w-50 mx-5">
+    {% for category in categories %}
+        <div class="list-group-item">
+            <span class="d-inline-flex align-items-center justify-content-center text-white rounded-circle m-1 me-2" style="background-color: #0082ca; width: 40px; height: 40px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708z"/>
+                    <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+            </span>
+            <a href="/categories/{{ category.categoryName }}">{{ category.categoryName}}</a>
+        </div>
+    {% endfor %}
+</ul>
+{% endblock %}

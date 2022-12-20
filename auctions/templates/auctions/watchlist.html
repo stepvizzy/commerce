@@ -2,12 +2,12 @@
 {% load static %}
 
 {% block body %}
-    <h2 class="text-center mt-4 mb-3"><strong>Active Listings</strong></h2>
+    <h2 class="text-center mt-4 mb-3"><strong>Your Watchlists</strong></h2>
     <section style="background-color: #eee;">
         
         <div class="container py-5">
             
-            {% for listing in activeListings %}
+            {% for listing in watchlists %}
                 <div class="row justify-content-center mb-3">
                     <div class="col-md-12 col-xl-10">
                         <div class="card shadow-0 border rounded-3">
@@ -33,7 +33,12 @@
                                         </div>
                                         <h6 class="text-success">Free shipping</h6>
                                         <div class="d-flex flex-column mt-4">
-                                            <a href="{% url 'listings' id=listing.id %}" class="btn btn-primary btn-sm" type="button">Details</a>
+                                            <form action="{% url 'removeWatchlist' id=listing.id %}" method="post">
+                                                {% csrf_token %}
+                                                <button class="btn btn-outline-danger btn-sm mt-2" type="submit">
+                                                    Remove from Watchlist
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>

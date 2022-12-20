@@ -2,15 +2,13 @@
 {% load crispy_forms_tags %}
 
 {% block body %}
-    <h2>Create Listing</h2>
+    <h2>Create New Listing</h2>
 
-    <form action="{% url 'create' %}" method="post" enctype="multipart/form-data" class="form-signin">
+    <form action="{% url 'create' %}" method="post">
         {% csrf_token %}
         <div class="form-label-group">
             {{ form|crispy }}
         </div>
-        <div class="form-group">
-            <input class="btn btn-success" type="submit" value="Submit">
-        </div>
+        <input type="submit" value="Create New Listing" class="btn btn-success">
     </form>
 {% endblock %}

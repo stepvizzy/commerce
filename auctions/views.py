@@ -6,15 +6,14 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
-from .forms import *
-from .models import *
+from .forms import CreateListing
+from .models import Category, Listing, User
 
 
 def index(request):
-    listings = Listing.objects.all()
-    return render(request, "auctions/index.html", {
-        'listings': listings
-    })
+    activeListings = Listing.objects.filter(stillActive=True)
+    context = {'activeListings' : activeListings}
+    return render(request, "auctions/index.html", context)
 
 def login_view(request):
     if request.method == "POST":
@@ -67,100 +66,84 @@ def register(request):
     else:
         return render(request, "auctions/register.html")
 
-# Allow signed-in users to create a new auctionlisting
+# Create a new listing for the user 
 @login_required(login_url="login")
-def create(request):
+def createListing(request):
+    # If user visit page via post method
     if request.method == "POST":
-        form = CreateListing(request.POST, request.FILES)
+        # Populate form with data from post request
+        form = CreateListing(request.POST)
         if form.is_valid():
-            # save aucitonlisting to db
-            instance = form.save(commit=False)
-            instance.auctioneer = request.user
-            instance.save()
+            # save listing to db
+            newListing = form.save(commit=False)
+            newListing.seller = request.user
+            newListing.currentPrice = request.POST.get('startPrice')
+            newListing.save()
             return HttpResponseRedirect(reverse("index"))
         else:
             return render (request, "auctions/create.html", {
-                "form": form
+                "form": CreateListing()
             })
 
-    return render(request, "auctions/create.html", {
-        "form": CreateListing()
-    })
+    # If user visit page via get method display the form
+    context = {"form": CreateListing()}
+    return render(request, "auctions/create.html", context)
+
+def displayCategories(request):
+    categories = Category.objects.all()
+    context = {'categories': categories}
+    return render(request, "auctions/category.html", context)
+
+def selectedCategoryListing(request, category):
+    category = Category.objects.get(categoryName=category).id
+    activeListing = Listing.objects.filter(stillActive=True, category=category)
+    context = {'activeListings': activeListing}
+    return render(request, "auctions/index.html", context)
 
 
-def list_view(request, list_url):
+def listing(request, id):
     # Get the auction listing
-    list_title = list_url.replace("_", " ")
-    auction = Listing.objects.get(title=list_title)
+    user = request.user
+    listing = Listing.objects.get(pk=id)
+    inWatchlist = user in listing.watchers.all()
 
-    # Check user is logged in
-    if request.user.is_authenticated:
-        # Get user's object
-        user = User.objects.get(username=request.user.username)
-        # Get all the people watching the auction
-        observers = auction.observing.all()
+    context = {'listing':Listing.objects.get(pk=id), 'inWatchlist':inWatchlist}
+    return render(request, "auctions/listing.html", context)
+
+def addWatchlist(request, id):
+    listing = Listing.objects.get(pk=id)
+    user = request.user
+    listing.watchers.add(user)
+    return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
+
+def removeWatchlist(request, id):
+    listing = Listing.objects.get(pk=id)
+    user = request.user
+    listing.watchers.remove(user)
+    return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
+
+def displayWatchlist(request):
+    user = request.user
+    userWatchlists = user.watchlist.all()
+    context = {'watchlists': userWatchlists}
+    return render(request, "auctions/watchlist.html", context)
+
+# def add_bid(request):
+#     if request.method == "POST":
+#         current_bid = int(request.POST.get("bid"))
+#         product_instance = Listing.objects.get(title=request.POST.get("product"))
+#         user_instance = User.objects.get(username=request.user.username)
         
-        # Iterate over all the observers
-        for observer in observers:
+#         try:
+#             bids = Bid.objects.get(product=product_instance).bid
+#             user_id = user_instance.id
+#             if current_bid > max(bids):
+#                 new_bid = Bid(bidder=user_id)
+#                 new_bid.save()
 
-            # Check if this user is part of the observers for this auction
-            if observer.username == user:
-                return render(request, "auctions/listing.html", {
-                    'listing': auction,
-                    'message': "Remove from Watchlist"
-                })
-
-        # Display add to watchlist
-        return render(request, "auctions/listing.html", {
-                    'listing': auction,
-                })
-
-    return render(request, "auctions/listing.html", {
-        'listing': auction
-        })
-
-@login_required
-def watchlist(request):
-    if request.method == "POST":
-        if request.user.username == request.POST.get("username"):
-            username = request.user.username
-            product = request.POST.get("product")
-
-            # Get the complete data sumbitted via post from the database
-            user_instance = User.objects.get(username=username)
-            user_id = user_instance.id
-            list_instance = Listing.objects.get(title=product)
-
-            # Remove  product from watchlist
-            if request.POST.get("command") == "Remove from Watchlist":
-                watchlist = Watchlist.objects.get(username=user_id)
-                watchlist.product.remove(list_instance)
-                return HttpResponseRedirect(reverse("index"))
-
-            # Add product to watchlist
-            try:
-                watchlists = Watchlist.objects.get(username=user_id)
-                watchlist_products = watchlists.product.all()
-                if watchlist_products.exists():
-                    for watchlist in watchlist_products:
-                        # Check if the new watchlist is already in the user's watchlist
-                        if watchlist.title == product:
-                            # Redirect them to the index page
-                            return HttpResponseRedirect(reverse("index"))
-                        else:
-                            # Add watchlist
-                            watchlists.product.add(list_instance)
-                            # Redirect them to the index page
-                            return HttpResponseRedirect(reverse("index"))
-                else:
-                    watchlists.product.add(list_instance)
-                    return HttpResponseRedirect(reverse("index"))
-            except ObjectDoesNotExist:
-                # Create new watchlist with this username
-                new_watchlist = Watchlist(username=user_instance)
-                new_watchlist.save()
-                new_watchlist.product.add(list_instance)
-                return HttpResponseRedirect(reverse("index"))
-            
-        else:
-            return HttpResponseRedirect(reverse("index"))
+#         except ObjectDoesNotExist:
+#             if current_bid > product_instance.starting_bid:
+#                 new_bid = Bid(bidder=user_instance, product=product_instance, bid=current_bid)
+#                 return HttpResponseRedirect(reverse("index"), {
+#                     'bid_message':'bid placed successfully'
+#                 })

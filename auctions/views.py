@@ -1,17 +1,17 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from django.core.exceptions import ObjectDoesNotExist
 
-from .forms import CreateListing
-from .models import Category, Listing, User
+from .forms import CreateListing, CommentForm, BidForm
+from .models import Bid, Category, Comment, Listing, User
 
 
 def index(request):
-    activeListings = Listing.objects.filter(stillActive=True)
+    activeListings = Listing.objects.all()
     context = {'activeListings' : activeListings}
     return render(request, "auctions/index.html", context)
 
@@ -106,21 +106,15 @@ def listing(request, id):
     user = request.user
     listing = Listing.objects.get(pk=id)
     inWatchlist = user in listing.watchers.all()
-
-    context = {'listing':Listing.objects.get(pk=id), 'inWatchlist':inWatchlist}
+    comments= Comment.objects.filter(listing=listing)
+    context = {
+        'listing':Listing.objects.get(pk=id),
+        'inWatchlist':inWatchlist,
+        'comments':comments,
+        'commentForm':CommentForm(),
+        'bidForm':BidForm()
+    }
     return render(request, "auctions/listing.html", context)
-
-def addWatchlist(request, id):
-    listing = Listing.objects.get(pk=id)
-    user = request.user
-    listing.watchers.add(user)
-    return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
-
-def removeWatchlist(request, id):
-    listing = Listing.objects.get(pk=id)
-    user = request.user
-    listing.watchers.remove(user)
-    return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
 
 def displayWatchlist(request):
     user = request.user
@@ -128,22 +122,52 @@ def displayWatchlist(request):
     context = {'watchlists': userWatchlists}
     return render(request, "auctions/watchlist.html", context)
 
-# def add_bid(request):
-#     if request.method == "POST":
-#         current_bid = int(request.POST.get("bid"))
-#         product_instance = Listing.objects.get(title=request.POST.get("product"))
-#         user_instance = User.objects.get(username=request.user.username)
-        
-#         try:
-#             bids = Bid.objects.get(product=product_instance).bid
-#             user_id = user_instance.id
-#             if current_bid > max(bids):
-#                 new_bid = Bid(bidder=user_id)
-#                 new_bid.save()
+def addOrRemoveWatchlist(request, id):
+    listing = Listing.objects.get(pk=id)
+    user = request.user
+    if user in listing.watchers.all():
+        listing.watchers.remove(user)
+        return HttpResponseRedirect(reverse("watchlist"))
+    else:
+        listing.watchers.add(user)
+        return HttpResponseRedirect(reverse("watchlist"))
 
-#         except ObjectDoesNotExist:
-#             if current_bid > product_instance.starting_bid:
-#                 new_bid = Bid(bidder=user_instance, product=product_instance, bid=current_bid)
-#                 return HttpResponseRedirect(reverse("index"), {
-#                     'bid_message':'bid placed successfully'
-#                 })
+def addComment(request, id):
+    user = request.user
+    listing = Listing.objects.get(pk=id)
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.writer = user
+        comment.listing = listing
+        comment.save()
+        return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
+
+
+def add_bid(request, id):
+    # Get data from the form
+    newBid = float(request.POST['bid'])
+    listing = Listing.objects.get(pk=id)
+    if newBid > listing.currentPrice:
+        listing.currentPrice = newBid
+        listing.save()
+        form = BidForm(request.POST)
+        newBid = form.save(commit=False)
+        newBid.product = listing
+        newBid.bidder = request.user
+        newBid.save()
+        messages.success(request, "Your bid has been accepted")
+        return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
+    else:
+        messages.error(request, "Your bid is lower than the current bid")
+        return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
+
+def closeListing(request, id):
+    listing = Listing.objects.get(pk=id)
+    listing.stillActive=False
+    # Get buyer's name from bid
+    buyer = Bid.objects.filter(product=listing).last().bidder
+    listing.buyer = buyer
+    listing.save()
+    messages.success(request, "Auction successfully closed")
+    return HttpResponseRedirect(reverse("index"))

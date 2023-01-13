@@ -2,7 +2,7 @@ from django import forms
 from django.forms import ModelForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
-from auctions.models import Category, Listing
+from auctions.models import Comment, Listing, Bid
 
 
 class CreateListing(forms.ModelForm):
@@ -18,11 +18,18 @@ class CreateListing(forms.ModelForm):
         }
     
         
-# class AddToWatchlist(forms.ModelForm):
-#     class Meta:
-#         model = Watchlist
-#         fields = '__all__'
-#         widgets = {
-#             'name': forms.HiddenInput(),
-#             'product': forms.HiddenInput()
-#         }
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['comment']
+        widgets = {
+            'comment': forms.TextInput(attrs={'placeholder':'New Comment', 'autocomplete': 'off', 'class':'form-control h-25 my-4'})
+        }
+
+class BidForm(forms.ModelForm):
+    class Meta:
+        model = Bid
+        fields = ['bid']
+        widgets = {
+            'bid':forms.NumberInput(attrs={'placeholder':'Bid', 'autocomplete':'off', 'class':'form-control w-auto mb-4'})
+        }

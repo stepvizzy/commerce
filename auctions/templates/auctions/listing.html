@@ -1,68 +1,134 @@
 {% extends "auctions/layout.html" %}
+{% load crispy_forms_tags %}
 
 {% block body %}
-    <!-- {% if bid_message %}
-        <div class="alert alert-primary">{{ bid_message }}</div>
-    {% endif %} -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% if not listing.stillActive and user.username == listing.buyer.username and user.username != listing.seller.username %}
+        <div class="alert alert-success" role="alert" >
+            <h4 class="text-success text-center">Congratulations! You won.</h4>
+        </div>
+    {% endif %}
     <h2 class="text-center mt-4 mb-3"><strong>{{ listing.title }}</strong></h2>
     <section style="background-color: #eee;">
         
         <div class="container py-5">
-            
-                <div class="row justify-content-center mb-3">
-                    <div class="col-md-12 col-xl-10">
+            <div class="row justify-content-center mb-3">
+                <div class="col-md-12 col-xl-10">
                     <div class="card shadow-0 border rounded-3">
                         <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-3 col-xl-3 mb-4 mb-lg-0">
-                                <div class="bg-image hover-zoom ripple rounded ripple-surface">
-                                    <img src="{{ listing.imageUrl }}" class="w-100" />
+                            <div class="row">
+                                <div class="col-md-12 col-lg-3 col-xl-3 mb-4 mb-lg-0">
+                                    <div class="bg-image ripple rounded ripple-surface">
+                                        <img src="{{ listing.imageUrl }}" class="w-100" />
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6 col-lg-6 col-xl-6">
-                                <h5>{{ listing.title }}</h5>
-                                <p class="mb-4 mb-md-0">
-                                    {{ listing.description}}
-                                </p>
-                            </div>
-                            <div class="col-md-6 col-lg-3 col-xl-3 border-sm-start-none border-start">
-                                <div class="d-flex flex-row align-items-center mb-1">
-                                    <h4 class="mb-1 me-1">${{ listing.currentPrice }}</h4>
-                                    {% if listing.currentPrice > listing.startPrice %}
-                                        <span class="text-danger"><s>${{ listing.startPrice }}</s></span>
-                                    {% endif %}
+                                <div class="col-md-6 col-lg-6 col-xl-6">
+                                    <h5>{{ listing.title }}</h5>
+                                    <p class="mb-4 mb-md-0">
+                                        {{ listing.description}}
+                                    </p>
                                 </div>
-                                <h6 class="text-success">Free shipping</h6>
-                                <div class="d-flex flex-column mt-4">
-                                    {% if user.is_authenticated and user.username != listing.seller.username %}
-                                        {% if inWatchlist %}
-                                            <form action="{% url 'removeWatchlist' id=listing.id %}" method="post">
-                                                {% csrf_token %}
-                                                <button class="btn btn-outline-danger btn-sm mt-2" type="submit">
-                                                    Remove from Watchlist
-                                                </button>
-                                            </form>
-                                        {% else %}
-                                            <form action="{% url 'addWatchlist' id=listing.id %}" method="post">
-                                                {% csrf_token %}
-                                                <button class="btn btn-outline-primary btn-sm my-2" type="submit">
-                                                    Add to Watchlist
-                                                </button>
-                                            </form>
+                                <div class="col-md-6 col-lg-3 col-xl-3 border-sm-start-none border-start">
+                                    <div class="d-flex flex-row align-items-center mb-1">
+                                        <h4 class="mb-1 me-1">${{ listing.currentPrice }}</h4>
+                                        {% if listing.currentPrice > listing.startPrice %}
+                                            <span class="text-danger"><s>${{ listing.startPrice }}</s></span>
                                         {% endif %}
+                                    </div>
+                                    {% if listing.stillActive %}
+                                        <h6 class="text-success">Still Open</h6>
+                                    {% else %}
+                                        <h5 class="text-danger">Closed</h5>
                                     {% endif %}
+                                    <div class="d-flex flex-column mt-4">
+                                        {% if user.is_authenticated and user.username != listing.seller.username and listing.stillActive %}
+                                            {% if inWatchlist %}
+                                                <form action="{% url 'addOrRemoveWatchlist' id=listing.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <button class="btn btn-outline-danger btn-sm mt-2" type="submit">
+                                                        Remove from Watchlist
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form action="{% url 'addOrRemoveWatchlist' id=listing.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <button class="btn btn-outline-primary btn-sm my-2" type="submit">
+                                                        Add to Watchlist
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if listing.stillActive %}
+                                                <form action="{% url 'closeListing' id=listing.id %}" method="post">
+                                                    {% csrf_token %}
+                                                    <button class="btn btn-outline-danger btn-sm mt-2" type="submit">
+                                                        Close Listing
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        </div>
-                            {% if user.username == listing.seller.username %}
-                                <div class="card-footer">Seller: You own this product</div>
-                                <footer class="card-footer">created on: {{ listing.dateCreated }}</footer>
-                            {% else %}
-                                <div class="card-footer blank">Seller: {{ listing.seller }}</div>
-                            {% endif %}
-                    </div>
+                        {% if user.username == listing.seller.username %}
+                            <div class="card-footer">Seller: You own this product</div>
+                            <footer class="card-footer">created on: {{ listing.dateCreated }}</footer>
+                        {% else %}
+                            <div class="card-footer blank">Seller: {{ listing.seller }}</div>
+                        {% endif %}
                     </div>
                 </div>
+            </div>
+            <div class="row justify-content-center mb-3">
+                <div class="col-md-12 col-xl-10">
+                    <div class="card shadow-0 border rounded-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Bid Form -->
+                                <div class="col-lg-6 col-xl-6">
+                                    {% if user.is_authenticated and user.username != listing.seller.username and listing.stillActive %}
+                                        <h3>Place your bid</h3>
+                                        <form action="{% url 'addBid' id=listing.id %}" method="post">
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                {{ bidForm.bid }}
+                                                <input type="submit">
+                                            </div>
+                                        </form>
+                                    {% endif %}
+                                </div> 
+                                <!-- Comments -->
+                                <div class="col-md-6 col-lg-6 col-xl-6">
+                                    <h3>Comments</h3><br>
+                                        <ul class="list-group list-group-flush">
+                                            {% for comment in comments %}
+                                                <b>@{{ comment.writer }}:</b>
+                                                <li class="list-group-item">{{ comment.comment }}</li><br>
+                                            {% endfor %}
+                                        </ul>
+                                    <!-- Comment Form -->
+                                    {% if user.is_authenticated %}
+                                        <form action="{% url 'addComment' id=listing.id %}" method="post">
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                {{ commentForm.comment }}
+                                            </div>
+                                            <input type="submit">
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </section>
 {% endblock %}

@@ -6,7 +6,7 @@
 
     <form action="{% url 'create' %}" method="post">
         {% csrf_token %}
-        <div class="form-label-group">
+        <div class="form-group">
             {{ form|crispy }}
         </div>
         <input type="submit" value="Create New Listing" class="btn btn-success">

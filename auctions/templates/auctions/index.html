@@ -2,6 +2,13 @@
 {% load static %}
 
 {% block body %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {{ message.tags }} alert-dismissible" role="alert" >
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
     <h2 class="text-center mt-4 mb-3"><strong>Active Listings</strong></h2>
     <section style="background-color: #eee;">
         
@@ -31,7 +38,13 @@
                                                 <span class="text-danger"><s>${{ listing.startPrice }}</s></span>
                                             {% endif %}
                                         </div>
-                                        <h6 class="text-success">Free shipping</h6>
+                                        {% if listing.stillActive %}
+                                            <h6 class="text-success">Still Open</h6>
+                                        {% else %}
+                                            <h6 class="text-danger">Closed</h6>
+                                        {% endif %}
+
+                                        
                                         <div class="d-flex flex-column mt-4">
                                             <a href="{% url 'listings' id=listing.id %}" class="btn btn-primary btn-sm" type="button">Details</a>
                                         </div>

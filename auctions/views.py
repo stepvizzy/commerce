@@ -12,6 +12,13 @@ from .models import Bid, Category, Comment, Listing, User
 
 def index(request):
     activeListings = Listing.objects.all()
+    for listing in activeListings:
+        currentBid = Bid.objects.filter(product=listing).last()
+        if currentBid:
+            listing.currentPrice =  currentBid.bid
+        else:
+            listing.currentPrice = listing.startPrice
+        listing.save()
     context = {'activeListings' : activeListings}
     return render(request, "auctions/index.html", context)
 
@@ -105,10 +112,16 @@ def listing(request, id):
     # Get the auction listing
     user = request.user
     listing = Listing.objects.get(pk=id)
+    currentBid = Bid.objects.filter(product=listing).last()
+    if currentBid:
+        listing.currentPrice =  currentBid.bid
+    else:
+        listing.currentPrice = listing.startPrice
+    listing.save()
     inWatchlist = user in listing.watchers.all()
     comments= Comment.objects.filter(listing=listing)
     context = {
-        'listing':Listing.objects.get(pk=id),
+        'listing':listing,
         'inWatchlist':inWatchlist,
         'comments':comments,
         'commentForm':CommentForm(),

@@ -16,8 +16,10 @@ def index(request):
         currentBid = Bid.objects.filter(product=listing).last()
         if currentBid:
             listing.currentPrice =  currentBid.bid
+            listing.buyer = currentBid.bidder
         else:
             listing.currentPrice = listing.startPrice
+            listing.buyer = None
         listing.save()
     context = {'activeListings' : activeListings}
     return render(request, "auctions/index.html", context)
@@ -115,8 +117,10 @@ def listing(request, id):
     currentBid = Bid.objects.filter(product=listing).last()
     if currentBid:
         listing.currentPrice =  currentBid.bid
+        listing.buyer = currentBid.bidder
     else:
         listing.currentPrice = listing.startPrice
+        listing.buyer = None
     listing.save()
     inWatchlist = user in listing.watchers.all()
     comments= Comment.objects.filter(listing=listing)

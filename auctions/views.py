@@ -103,7 +103,7 @@ def displayCategories(request):
 
 def selectedCategoryListing(request, category):
     category = Category.objects.get(categoryName=category).id
-    activeListing = Listing.objects.filter(stillActive=True, category=category)
+    activeListing = Listing.objects.filter(category=category)
     context = {'activeListings': activeListing}
     return render(request, "auctions/index.html", context)
 
@@ -140,10 +140,10 @@ def addOrRemoveWatchlist(request, id):
     user = request.user
     if user in listing.watchers.all():
         listing.watchers.remove(user)
-        return HttpResponseRedirect(reverse("watchlist"))
+        return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
     else:
         listing.watchers.add(user)
-        return HttpResponseRedirect(reverse("watchlist"))
+        return HttpResponseRedirect(reverse("listings", kwargs={'id':listing.id}))
 
 def addComment(request, id):
     user = request.user

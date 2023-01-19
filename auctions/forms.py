@@ -33,3 +33,17 @@ class BidForm(forms.ModelForm):
         widgets = {
             'bid':forms.NumberInput(attrs={'placeholder':'Bid', 'autocomplete':'off', 'class':'form-control w-auto mb-4'})
         }
+
+class BidFormAdmin(forms.ModelForm):
+    class Meta:
+        model = Bid
+        fields = ['bidder', 'product', 'bid']
+
+    def clean(self):
+        bid = self.cleaned_data.get("bid")
+        print(type(bid))
+        currentPrice = self.cleaned_data.get("product").currentPrice
+        print(type(currentPrice))
+        if currentPrice > bid:
+            raise forms.ValidationError(f"Bid lower than current bid which is {currentPrice}")
+        return self.cleaned_data

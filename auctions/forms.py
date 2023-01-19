@@ -44,6 +44,6 @@ class BidFormAdmin(forms.ModelForm):
         print(type(bid))
         currentPrice = self.cleaned_data.get("product").currentPrice
         print(type(currentPrice))
-        if currentPrice > bid:
-            raise forms.ValidationError(f"Bid lower than current bid which is {currentPrice}")
+        if currentPrice > bid or currentPrice == bid:
+            raise forms.ValidationError(f"Bid must be than current bid which is {currentPrice}")
         return self.cleaned_data
